@@ -1,0 +1,1335 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Budget API",
+    "description": "API для управления бюджетами, расходами и валютами",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "Основной сервер API"
+    }
+  ],
+  "tags": [
+    { "name": "auth", "description": "Аутентификация" },
+    { "name": "users", "description": "Управление пользователями" },
+    { "name": "profiles", "description": "Профили пользователей" },
+    { "name": "currencies", "description": "Валюты" },
+    { "name": "categories", "description": "Категории расходов" },
+    { "name": "budgets", "description": "Бюджеты" },
+    { "name": "budget-days", "description": "Дни бюджета" },
+    { "name": "expenses", "description": "Расходы" },
+    { "name": "statistics", "description": "Статистика" },
+    { "name": "public-budgets", "description": "Публичные бюджеты" }
+  ],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Регистрация нового пользователя",
+        "operationId": "register",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Пользователь успешно зарегистрирован.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthResponse" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для регистрации." }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Вход пользователя",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успешный вход.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AuthResponse" }
+              }
+            }
+          },
+          "401": { "description": "Неверные учетные данные." }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["users"],
+        "summary": "Получить список всех пользователей (для администраторов)",
+        "operationId": "findAllUsers",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список пользователей",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDtoUserViewModel"
+                }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "403": { "description": "Доступ запрещен." }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["users"],
+        "summary": "Получить пользователя по ID",
+        "operationId": "findOneUser",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": {
+            "description": "Информация о пользователе.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserViewModel" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "403": { "description": "Доступ запрещен." },
+          "404": { "description": "Пользователь не найден." }
+        }
+      },
+      "patch": {
+        "tags": ["users"],
+        "summary": "Обновить пользователя (только свои данные или администратор)",
+        "operationId": "updateUser",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateUserDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Пользователь успешно обновлен.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для обновления пользователя." },
+          "401": { "description": "Неавторизованный доступ." },
+          "403": { "description": "Доступ запрещен." },
+          "404": { "description": "Пользователь не найден." }
+        }
+      },
+      "delete": {
+        "tags": ["users"],
+        "summary": "Удалить пользователя (только себя или администратор)",
+        "operationId": "removeUser",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": {
+            "description": "Пользователь успешно удален.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "403": { "description": "Доступ запрещен." },
+          "404": { "description": "Пользователь не найден." }
+        }
+      }
+    },
+    "/profiles/me": {
+      "get": {
+        "tags": ["profiles"],
+        "summary": "Получить профиль текущего пользователя",
+        "operationId": "getProfile",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Профиль пользователя.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProfileViewModel" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." }
+        }
+      },
+      "patch": {
+        "tags": ["profiles"],
+        "summary": "Обновить профиль текущего пользователя",
+        "operationId": "updateProfile",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateProfileDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Профиль успешно обновлен.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ProfileViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для обновления профиля." },
+          "401": { "description": "Неавторизованный доступ." }
+        }
+      }
+    },
+    "/currencies": {
+      "post": {
+        "tags": ["currencies"],
+        "summary": "Создать новую валюту (только для администраторов)",
+        "operationId": "createCurrency",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateCurrencyDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Валюта успешно создана.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CurrencyViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для создания валюты." },
+          "401": { "description": "Неавторизованный доступ." },
+          "403": { "description": "Доступ запрещен." }
+        }
+      },
+      "get": {
+        "tags": ["currencies"],
+        "summary": "Получить список всех валют",
+        "operationId": "findAllCurrencies",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список валют",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDtoCurrencyViewModel"
+                }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." }
+        }
+      }
+    },
+    "/currencies/{id}": {
+      "get": {
+        "tags": ["currencies"],
+        "summary": "Получить валюту по ID",
+        "operationId": "findOneCurrency",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": {
+            "description": "Информация о валюте.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CurrencyViewModel" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Валюта не найдена." }
+        }
+      },
+      "patch": {
+        "tags": ["currencies"],
+        "summary": "Обновить валюту (только для администраторов)",
+        "operationId": "updateCurrency",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateCurrencyDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Валюта успешно обновлена.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CurrencyViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для обновления валюты." },
+          "401": { "description": "Неавторизованный доступ." },
+          "403": { "description": "Доступ запрещен." },
+          "404": { "description": "Валюта не найдена." }
+        }
+      },
+      "delete": {
+        "tags": ["currencies"],
+        "summary": "Удалить валюту (только для администраторов)",
+        "operationId": "removeCurrency",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": {
+            "description": "Валюта успешно удалена.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "403": { "description": "Доступ запрещен." },
+          "404": { "description": "Валюта не найдена." }
+        }
+      }
+    },
+    "/categories": {
+      "post": {
+        "tags": ["categories"],
+        "summary": "Создать новую категорию",
+        "operationId": "createCategory",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateCategoryDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Категория успешно создана.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CategoryViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для создания категории." },
+          "401": { "description": "Неавторизованный доступ." }
+        }
+      },
+      "get": {
+        "tags": ["categories"],
+        "summary": "Получить список своих категорий",
+        "operationId": "findAllCategories",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список категорий",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDtoCategoryViewModel"
+                }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." }
+        }
+      }
+    },
+    "/categories/{id}": {
+      "get": {
+        "tags": ["categories"],
+        "summary": "Получить категорию по ID",
+        "operationId": "findOneCategory",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": {
+            "description": "Информация о категории.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CategoryViewModel" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Категория не найдена." }
+        }
+      },
+      "patch": {
+        "tags": ["categories"],
+        "summary": "Обновить категорию",
+        "operationId": "updateCategory",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateCategoryDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Категория успешно обновлена.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CategoryViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для обновления категории." },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Категория не найдена." }
+        }
+      },
+      "delete": {
+        "tags": ["categories"],
+        "summary": "Удалить категорию",
+        "operationId": "removeCategory",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": {
+            "description": "Категория успешно удалена.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Категория не найдена." }
+        }
+      }
+    },
+    "/budgets": {
+      "post": {
+        "tags": ["budgets"],
+        "summary": "Создать новый бюджет",
+        "operationId": "createBudget",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateBudgetDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Бюджет успешно создан.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BudgetViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для создания бюджета." },
+          "401": { "description": "Неавторизованный доступ." }
+        }
+      },
+      "get": {
+        "tags": ["budgets"],
+        "summary": "Получить список своих бюджетов",
+        "operationId": "mineBudgets",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список бюджетов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDtoBudgetViewModel"
+                }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." }
+        }
+      }
+    },
+    "/budgets/{id}": {
+      "patch": {
+        "tags": ["budgets"],
+        "summary": "Обновить бюджет",
+        "operationId": "updateBudget",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateBudgetDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Бюджет успешно обновлен.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BudgetViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для обновления бюджета." },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Бюджет не найден." }
+        }
+      },
+      "delete": {
+        "tags": ["budgets"],
+        "summary": "Удалить бюджет",
+        "operationId": "removeBudget",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": {
+            "description": "Бюджет успешно удален.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Бюджет не найден." }
+        }
+      }
+    },
+    "/budget-days": {
+      "post": {
+        "tags": ["budget-days"],
+        "summary": "Создать новый день бюджета",
+        "operationId": "createBudgetDay",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateBudgetDayDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "День бюджета успешно создан.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BudgetDayViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для создания дня бюджета." },
+          "401": { "description": "Неавторизованный доступ." }
+        }
+      }
+    },
+    "/budget-days/{id}": {
+      "get": {
+        "tags": ["budget-days"],
+        "summary": "Получить день бюджета по ID со списком расходов",
+        "operationId": "findOneBudgetDay",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": {
+            "description": "Информация о дне бюджета.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BudgetDayViewModel" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "День бюджета не найден." }
+        }
+      },
+      "patch": {
+        "tags": ["budget-days"],
+        "summary": "Обновить день бюджета (например, дату)",
+        "operationId": "updateBudgetDay",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateBudgetDayDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "День бюджета успешно обновлен.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/BudgetDayViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для обновления дня бюджета." },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "День бюджета не найден." }
+        }
+      },
+      "delete": {
+        "tags": ["budget-days"],
+        "summary": "Удалить день бюджета",
+        "operationId": "removeBudgetDay",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": {
+            "description": "День бюджета успешно удален.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "День бюджета не найден." }
+        }
+      }
+    },
+    "/budget-days/budget/{budgetId}": {
+      "get": {
+        "tags": ["budget-days"],
+        "summary": "Получить список дней бюджета по ID бюджета",
+        "operationId": "findByBudget",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/budgetId" },
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список дней бюджета",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDtoBudgetDayViewModel"
+                }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Бюджет не найден." }
+        }
+      }
+    },
+    "/expenses": {
+      "post": {
+        "tags": ["expenses"],
+        "summary": "Создать новый расход",
+        "operationId": "createExpense",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateExpenseDto" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Расход успешно создан.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ExpenseViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для создания расхода." },
+          "401": { "description": "Неавторизованный доступ." }
+        }
+      }
+    },
+    "/expenses/{id}": {
+      "get": {
+        "tags": ["expenses"],
+        "summary": "Получить расход по ID",
+        "operationId": "findOneExpense",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": {
+            "description": "Информация о расходе.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ExpenseViewModel" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Расход не найден." }
+        }
+      },
+      "patch": {
+        "tags": ["expenses"],
+        "summary": "Обновить расход",
+        "operationId": "updateExpense",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateExpenseDto" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Расход успешно обновлен.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ExpenseViewModel" }
+              }
+            }
+          },
+          "400": { "description": "Неверные данные для обновления расхода." },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Расход не найден." }
+        }
+      },
+      "delete": {
+        "tags": ["expenses"],
+        "summary": "Удалить расход",
+        "operationId": "removeExpense",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/id" }],
+        "responses": {
+          "200": {
+            "description": "Расход успешно удален.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SuccessResponse" }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Расход не найден." }
+        }
+      }
+    },
+    "/expenses/by-day/{dayId}": {
+      "get": {
+        "tags": ["expenses"],
+        "summary": "Получить список расходов по ID дня бюджета",
+        "operationId": "byDay",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/dayId" },
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список расходов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDtoExpenseViewModel"
+                }
+              }
+            }
+          },
+          "401": { "description": "Неавторизованный доступ." }
+        }
+      }
+    },
+    "/statistics/expenses-by-day": {
+      "get": {
+        "tags": ["statistics"],
+        "summary": "Получить статистику расходов по дням за указанный месяц",
+        "operationId": "getExpensesByDay",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/year" },
+          { "$ref": "#/components/parameters/month" },
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Статистика по дням",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDtoExpenseByDayViewModel"
+                }
+              }
+            }
+          },
+          "400": { "description": "Неверные параметры запроса (год или месяц)." },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Пользователь не найден или у него нет бюджетов." }
+        }
+      }
+    },
+    "/statistics/category-stats": {
+      "get": {
+        "tags": ["statistics"],
+        "summary": "Получить статистику по категориям за указанный месяц",
+        "operationId": "getCategoryStats",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/year" },
+          { "$ref": "#/components/parameters/month" },
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Статистика по категориям",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDtoCategoryStatsViewModel"
+                }
+              }
+            }
+          },
+          "400": { "description": "Неверные параметры запроса (год или месяц)." },
+          "401": { "description": "Неавторизованный доступ." },
+          "404": { "description": "Пользователь не найден или у него нет бюджетов." }
+        }
+      }
+    },
+    "/public-budgets": {
+      "get": {
+        "tags": ["public-budgets"],
+        "summary": "Получить список всех публичных бюджетов",
+        "operationId": "findAllPublicBudgets",
+        "parameters": [
+          { "$ref": "#/components/parameters/page" },
+          { "$ref": "#/components/parameters/limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Список публичных бюджетов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponseDtoPublicBudgetViewModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public-budgets/{budgetId}/publish": {
+      "post": {
+        "tags": ["public-budgets"],
+        "summary": "Опубликовать бюджет (сделать публичным)",
+        "operationId": "publish",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/budgetId" }],
+        "responses": {
+          "200": { "description": "Бюджет успешно опубликован." },
+          "401": { "description": "Неавторизованный доступ." },
+          "403": { "description": "Доступ запрещен (бюджет не принадлежит пользователю)." },
+          "404": { "description": "Бюджет не найден." }
+        }
+      }
+    },
+    "/public-budgets/{budgetId}/unpublish": {
+      "delete": {
+        "tags": ["public-budgets"],
+        "summary": "Снять бюджет с публикации",
+        "operationId": "unpublish",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/budgetId" }],
+        "responses": {
+          "200": { "description": "Бюджет успешно снят с публикации." },
+          "401": { "description": "Неавторизованный доступ." },
+          "403": { "description": "Доступ запрещен (бюджет не принадлежит пользователю)." },
+          "404": { "description": "Бюджет не найден или не был опубликован." }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "parameters": {
+      "id": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "budgetId": {
+        "name": "budgetId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "dayId": {
+        "name": "dayId",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "integer" }
+      },
+      "year": {
+        "name": "year",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "integer" },
+        "description": "Год (например, 2024)"
+      },
+      "month": {
+        "name": "month",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "description": "Месяц (1-12)"
+      },
+      "page": {
+        "name": "page",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "integer", "default": 1 },
+        "description": "Номер страницы"
+      },
+      "limit": {
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "schema": { "type": "integer", "default": 10 },
+        "description": "Количество элементов на странице"
+      }
+    },
+    "schemas": {
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "access_token": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+        }
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "minLength": 3, "maxLength": 50 },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 6, "maxLength": 200 },
+          "defaultCurrencyId": { "type": "integer", "nullable": true }
+        },
+        "required": ["username", "email", "password"]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "usernameOrEmail": { "type": "string" },
+          "password": { "type": "string" }
+        },
+        "required": ["usernameOrEmail", "password"]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "minLength": 3, "maxLength": 50 },
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 6, "maxLength": 200 },
+          "defaultCurrencyId": { "type": "integer", "nullable": true }
+        }
+      },
+      "UpdateUserProfileDto": {
+        "type": "object",
+        "properties": {
+          "username": { "type": "string", "minLength": 3, "maxLength": 50 },
+          "email": { "type": "string", "format": "email" },
+          "defaultCurrencyId": { "type": "integer", "nullable": true }
+        }
+      },
+      "UserViewModel": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "username": { "type": "string", "example": "john_doe" },
+          "email": { "type": "string", "example": "john.doe@example.com" },
+          "defaultCurrency": { "$ref": "#/components/schemas/CurrencyViewModel" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ProfileViewModel": {
+        "type": "object",
+        "properties": {
+          "userId": { "type": "integer" },
+          "fullName": { "type": "string", "nullable": true },
+          "avatarUrl": { "type": "string", "nullable": true, "format": "uri" },
+          "bio": { "type": "string", "nullable": true },
+          "defaultCurrency": { "$ref": "#/components/schemas/CurrencyViewModel" },
+          "totalSpent": { "type": "string", "example": "1250.75" },
+          "budgets": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BudgetViewModel" }
+          }
+        }
+      },
+      "UpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "fullName": { "type": "string", "nullable": true },
+          "avatarUrl": { "type": "string", "nullable": true, "format": "uri" },
+          "bio": { "type": "string", "nullable": true },
+          "defaultCurrencyId": { "type": "integer", "nullable": true }
+        }
+      },
+      "CreateCurrencyDto": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "minLength": 3, "maxLength": 3 },
+          "name": { "type": "string", "minLength": 1, "maxLength": 50 },
+          "symbol": { "type": "string", "minLength": 1, "maxLength": 10 }
+        },
+        "required": ["code", "name", "symbol"]
+      },
+      "UpdateCurrencyDto": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "string", "minLength": 3, "maxLength": 3 },
+          "name": { "type": "string", "minLength": 1, "maxLength": 50 },
+          "symbol": { "type": "string", "minLength": 1, "maxLength": 10 }
+        }
+      },
+      "CurrencyViewModel": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "code": { "type": "string", "example": "USD" },
+          "name": { "type": "string", "example": "US Dollar" },
+          "symbol": { "type": "string", "example": "$" }
+        }
+      },
+      "CreateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "color": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$" }
+        },
+        "required": ["name"]
+      },
+      "UpdateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "color": { "type": "string", "pattern": "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$" }
+        }
+      },
+      "CategoryViewModel": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "name": { "type": "string", "example": "Продукты" },
+          "color": { "type": "string", "example": "#FF5733" }
+        }
+      },
+      "CreateBudgetDto": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "currencyId": { "type": "integer" },
+          "isPublic": { "type": "boolean", "default": false }
+        },
+        "required": ["name", "currencyId"]
+      },
+      "UpdateBudgetDto": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "currencyId": { "type": "integer" },
+          "isPublic": { "type": "boolean" }
+        }
+      },
+      "BudgetViewModel": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "name": { "type": "string", "example": "Мой семейный бюджет" },
+          "currency": { "$ref": "#/components/schemas/CurrencyViewModel" },
+          "isPublic": { "type": "boolean", "example": false },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateBudgetDayDto": {
+        "type": "object",
+        "properties": {
+          "budgetId": { "type": "integer" },
+          "date": { "type": "string", "format": "date" }
+        },
+        "required": ["budgetId", "date"]
+      },
+      "UpdateBudgetDayDto": {
+        "type": "object",
+        "properties": {
+          "budgetId": { "type": "integer" },
+          "date": { "type": "string", "format": "date" }
+        }
+      },
+      "ExpenseViewModel": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "budgetDayId": { "type": "integer", "example": 5 },
+          "category": { "$ref": "#/components/schemas/CategoryViewModel" },
+          "amount": { "type": "string", "example": "-5000.00" },
+          "description": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateExpenseDto": {
+        "type": "object",
+        "properties": {
+          "budgetDayId": { "type": "integer" },
+          "categoryId": { "type": "integer" },
+          "amount": { "type": "string" },
+          "description": { "type": "string", "nullable": true }
+        },
+        "required": ["budgetDayId", "categoryId", "amount"]
+      },
+      "UpdateExpenseDto": {
+        "type": "object",
+        "properties": {
+          "budgetDayId": { "type": "integer" },
+          "categoryId": { "type": "integer" },
+          "amount": { "type": "string" },
+          "description": { "type": "string", "nullable": true }
+        }
+      },
+      "BudgetDayViewModel": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "date": { "type": "string", "example": "2024-01-15" },
+          "totalSpent": { "type": "string", "example": "150.75" },
+          "currency": { "$ref": "#/components/schemas/CurrencyViewModel" },
+          "expenses": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ExpenseViewModel" }
+          }
+        }
+      },
+      "ExpenseByDayItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 5 },
+          "category": { "type": "string", "example": "Продукты" },
+          "amount": { "type": "string", "example": "75.25" },
+          "description": { "type": "string", "nullable": true }
+        }
+      },
+      "ExpenseByDayViewModel": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "example": "2024-01-15" },
+          "totalSpent": { "type": "string", "example": "150.75" },
+          "currency": { "$ref": "#/components/schemas/CurrencyViewModel" },
+          "expenses": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ExpenseByDayItem" }
+          }
+        }
+      },
+      "CategoryStatsViewModel": {
+        "type": "object",
+        "properties": {
+          "category": { "type": "string", "example": "Продукты" },
+          "totalSpent": { "type": "string", "example": "320.50" },
+          "currency": { "$ref": "#/components/schemas/CurrencyViewModel" },
+          "count": { "type": "integer", "example": 15 }
+        }
+      },
+      "PublicBudgetViewModel": {
+        "type": "object",
+        "properties": {
+          "budgetId": { "type": "integer", "example": 10 },
+          "userName": { "type": "string", "example": "john_doe" },
+          "budgetName": { "type": "string", "example": "Мой семейный бюджет" },
+          "currency": { "$ref": "#/components/schemas/CurrencyViewModel" },
+          "sharedAt": { "type": "string", "format": "date-time" },
+          "totalSpent": { "type": "string", "example": "2500.50" }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true }
+        }
+      },
+      "PaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "example": 1 },
+          "limit": { "type": "integer", "example": 10 },
+          "totalItems": { "type": "integer", "example": 50 },
+          "totalPages": { "type": "integer", "example": 5 },
+          "hasNextPage": { "type": "boolean", "example": true },
+          "hasPreviousPage": { "type": "boolean", "example": false }
+        }
+      },
+      "PaginatedResponseDtoUserViewModel": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/UserViewModel" }
+          },
+          "meta": { "$ref": "#/components/schemas/PaginationMetaDto" }
+        }
+      },
+      "PaginatedResponseDtoCurrencyViewModel": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CurrencyViewModel" }
+          },
+          "meta": { "$ref": "#/components/schemas/PaginationMetaDto" }
+        }
+      },
+      "PaginatedResponseDtoCategoryViewModel": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CategoryViewModel" }
+          },
+          "meta": { "$ref": "#/components/schemas/PaginationMetaDto" }
+        }
+      },
+      "PaginatedResponseDtoBudgetViewModel": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BudgetViewModel" }
+          },
+          "meta": { "$ref": "#/components/schemas/PaginationMetaDto" }
+        }
+      },
+      "PaginatedResponseDtoBudgetDayViewModel": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/BudgetDayViewModel" }
+          },
+          "meta": { "$ref": "#/components/schemas/PaginationMetaDto" }
+        }
+      },
+      "PaginatedResponseDtoExpenseViewModel": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ExpenseViewModel" }
+          },
+          "meta": { "$ref": "#/components/schemas/PaginationMetaDto" }
+        }
+      },
+      "PaginatedResponseDtoExpenseByDayViewModel": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/ExpenseByDayViewModel" }
+          },
+          "meta": { "$ref": "#/components/schemas/PaginationMetaDto" }
+        }
+      },
+      "PaginatedResponseDtoCategoryStatsViewModel": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CategoryStatsViewModel" }
+          },
+          "meta": { "$ref": "#/components/schemas/PaginationMetaDto" }
+        }
+      },
+      "PaginatedResponseDtoPublicBudgetViewModel": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PublicBudgetViewModel" }
+          },
+          "meta": { "$ref": "#/components/schemas/PaginationMetaDto" }
+        }
+      }
+    }
+  }
+}
